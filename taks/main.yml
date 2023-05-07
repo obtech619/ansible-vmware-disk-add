@@ -1,0 +1,33 @@
+---
+- name: Gather vm disk facts
+  vmware_guest_disk_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_pwd }}"
+    datacenter: "{{ vcenter_dc }}"
+    validate_certs: no
+    name: "{{ ansible_hostname }}
+  delegate_to: localhost
+  register: dsinfo
+  
+  - name: Identify Datastore for Disk0
+    set_fact:
+      datastore: "{{ dsinfo.guest_disk_facts['0'|quote].backing_datastore }}"
+      
+- name: Add disk to existing vm
+  vmware_guest_disk:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_pwd }}"
+    datacenter: "{{ vcenter_dc }}"
+    validate_certs: no
+    name: "{{ ansible_hostname }}"
+    disk:
+      - size_gb "{{ ds_size }}"
+        type: thin
+        state: present
+        datastore: "{{ datastore }}"
+        scsi_controller: "{{ sc_number }}"
+        unit_number: "{{ ds_number }}"
+  delegate_to: localhost
+  register: disk_facts
